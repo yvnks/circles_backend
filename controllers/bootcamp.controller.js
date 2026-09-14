@@ -2,6 +2,7 @@ import Bootcamp from '../models/Bootcamp.model.js';
 import CustomErrorHandlerAPI from '../helpers/customErrorHandlerAPI.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import geocoder from '../utils/app.geocoder.js';
+import path from 'path';
 
 // @desc    Get all bootcamps
 // @route   GET /api/v1/bootcamps
@@ -151,5 +152,60 @@ export const getBootcampInRadius = asyncHandler(async (req, res, next) => {
   res
     .status(200)
     .json({ success: true, count: bootcamps.length, data: bootcamps });
-  console.log(req.params);
+  //console.log(req.params);
+});
+
+// @desc    Delete specific bootcamp
+// @route   PUT /api/v1/bootcamps/:id/photo
+// @access  Private
+export const bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
+  const bootcamp = await Bootcamp.findById(req.params.id);
+
+  if (!bootcamp) {
+    return next(
+      `We tried to find a bootcamp with the ID: ${req.params.id} but we ran into a challenge.\nWe are notifiying our engineers.`,
+    );
+  }
+
+  if (!req.files) {
+    return next('Please upload a file', 404);
+  }
+
+  console.log(req.files);
+
+  const file = req.files.file;
+
+  // Checks if uploaded file is an image/jpg/png/gif
+  if (!file.mimetype.startsWith('image')) {
+    return next(new CustomErrorHandlerAPI('Please upload a photo', 404));
+  }
+
+  if (file.size > process.env.MAX_FILE_UPLOAD) {
+    // Stored in bytes.
+    return next(
+      new CustomErrorHandlerAPI(
+        'Please upload a picture smaller than 1 MB.',
+        400,
+      ),
+    );
+  }
+
+  // Creates a default name for files
+  file.name = `${bootcamp.name.split(' ').join('-').toLowerCase()}${path.parse(file.name).ext}`;
+  file.mv(`${process.env.FILE_UPLOAD_PATH}${file.name}`, async (err) => {
+    if (err) {
+      return next(new CustomErrorHandlerAPI('Failed to upload photo', 500));
+    }
+  });
+
+  await Bootcamp.findByIdAndUpdate(req.params.id, {
+    photo: `${process.env.FILE_UPLOAD_PATH}${file.name}`,
+  });
+
+  res.status(200).json({
+    sucess: true,
+    data: `${process.env.FILE_UPLOAD_PATH}${file.name}`,
+  });
+
+  console.log(file.name);
 });
