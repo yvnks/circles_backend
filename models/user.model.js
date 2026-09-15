@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const UserSchema = mongoose.Schema(
   {
@@ -41,5 +43,25 @@ const UserSchema = mongoose.Schema(
   },
   { timestamps: true },
 );
+
+/**
+ * @param {n/a}
+ * hash password before saving into db.
+ */
+UserSchema.pre('save', async function () {
+  // ten is recommended according to the docs;
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+/**
+ *
+ * @returns {JwtSignedToken}
+ */
+UserSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: process.env.JWT_EXPIRATION,
+  });
+};
 
 export default mongoose.model('User', UserSchema);
