@@ -49,6 +49,11 @@ const sendTokenResponse = (user, statusCode, res) => {
     expires: dayjs().add(process.env.JWT_COOKIE_EXPIRE, 'day').toDate(),
     httpOnly: true,
   };
+
+  if (process.env.NODE_ENV === 'production') {
+    options.secure = true;
+  }
+
   res.status(statusCode).cookie('token', token, options).json({
     success: true,
     token,
