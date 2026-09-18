@@ -45,7 +45,7 @@ const UserSchema = mongoose.Schema(
 );
 
 /**
- * @param {n/a}
+ * @param
  * hash password before saving into db.
  */
 UserSchema.pre('save', async function () {
