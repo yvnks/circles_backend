@@ -1,6 +1,7 @@
 import CustomErrorHandlerAPI from '../helpers/customErrorHandlerAPI.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import User from '../models/user.model.js';
+import dayjs from 'dayjs';
 
 export const register = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, email, password, role } = req.body;
@@ -13,11 +14,7 @@ export const register = asyncHandler(async (req, res, next) => {
     role,
   });
 
-  const token = user.getSignedJwtToken();
-  res.status(200).json({
-    success: true,
-    token,
-  });
+  sendTokenResponse(user, 200, res);
 });
 
 export const login = asyncHandler(async (req, res, next) => {
@@ -42,9 +39,18 @@ export const login = asyncHandler(async (req, res, next) => {
     return next(new CustomErrorHandlerAPI('Invalid password', 401));
   }
 
+  sendTokenResponse(user, 200, res);
+});
+
+const sendTokenResponse = (user, statusCode, res) => {
   const token = user.getSignedJwtToken();
-  res.status(200).json({
+
+  const options = {
+    expires: dayjs().add(process.env.JWT_COOKIE_EXPIRE, 'day').toDate(),
+    httpOnly: true,
+  };
+  res.status(statusCode).cookie('token', token, options).json({
     success: true,
     token,
   });
-});
+};

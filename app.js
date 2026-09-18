@@ -8,6 +8,7 @@ import connectDB from './config/db.bootcamp.js';
 import customErrorHandler from './middleware/customErrorHandler.js';
 import fileUpload from 'express-fileupload';
 import path from 'path';
+import cookieParser from 'cookie-parser';
 
 configDotenv({ path: './config/config.env' });
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(express.static(path.join(import.meta.dirname, 'images')));
 app.set('query parser', 'extended');
 app.use(fileUpload());
+app.use(cookieParser())
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
