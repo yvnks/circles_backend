@@ -39,3 +39,17 @@ export const protect = asyncHandler(async function (req, res, next) {
   }
   console.log(token);
 });
+
+export const authorize = function (...args) {
+  return function (req, res, next) {
+    if (!args.includes(req.user.role)) {
+      return next(
+        new CustomErrorHandlerAPI(
+          `User role: ${req.user.role} is not authorized to access this route`,
+          403,
+        ),
+      );
+    }
+    next();
+  };
+};
