@@ -23,15 +23,15 @@ router.route('/radius/:zipcode/:distance').get(getBootcampInRadius);
 router
   .route('/')
   .get(advancedresults(Bootcamp, 'courses'), getBootcamps)
-  .post(protect, authorize('Publisher', 'Admin'), createBootcamp);
+  .post(protect, authorize('publisher', 'user'), createBootcamp);
 router
   .route('/:id')
   .get(getBootcamp)
-  .patch(protect, authorize('Publisher', 'Admin'),   updateBootcamp)
-  .delete(protect, authorize('Publisher', 'Admin'), deleteBootcamp);
+  .patch(protect, authorize('publisher', 'user'), updateBootcamp)
+  .delete(protect, authorize('publisher', 'user'), deleteBootcamp);
 
 router
   .route('/:id/photo')
-  .put(protect, authorize('Publisher', 'Admin'), bootcampPhotoUpload);
+  .put(protect, authorize('publisher', 'user'), bootcampPhotoUpload);
 
 export default router;

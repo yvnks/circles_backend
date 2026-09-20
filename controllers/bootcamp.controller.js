@@ -32,6 +32,19 @@ export const getBootcamp = asyncHandler(async (req, res, next) => {
 // @route   POST /api/v1/bootcamps/:id
 // @access  Private
 export const createBootcamp = asyncHandler(async (req, res, next) => {
+  req.body.user = req.user.id;
+
+  const publishedBootcamp = await Bootcamp.findOne({ user: req.user.id });
+
+  // Check if user is not an admin.
+  if (publishedBootcamp && req.user.role !== 'admin') {
+    return next(
+      new CustomErrorHandlerAPI(
+        `${req.user.role} is only allowed to create 1 bootcamp`,
+        400,
+      ),
+    );
+  }
   const bootcamp = await Bootcamp.create(req.body);
   res.status(201).json({ success: true, data: bootcamp });
 });
