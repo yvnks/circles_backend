@@ -2,6 +2,7 @@ import Bootcamp from '../models/Bootcamp.model.js';
 import CustomErrorHandlerAPI from '../helpers/customErrorHandlerAPI.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import Course from '../models/courses.model.js';
+import checkOwner from '../utils/checkOwner.js';
 
 // @desc    Get all bootcamps
 // @route   GET /api/v1/courses
@@ -49,18 +50,20 @@ export const getCourse = asyncHandler(async function (req, res, next) {
  */
 export const addCourse = asyncHandler(async function (req, res, next) {
   req.body.bootcamp = req.params.bootcampId;
+  req.body.user = req.user.id;
 
   const bootcamp = await Bootcamp.findById(req.params.bootcampId);
 
   if (!bootcamp) {
     return next(
       new CustomErrorHandlerAPI(
-        `We tried to find a bootcamp with the ID: ${req.params.bootcampId}
-         but an unforseen error occured. We are notifying our engineers.`,
+        `No bootcamp found with the id: ${req.params.bootcampId}`,
         404,
       ),
     );
   }
+
+  checkOwner(bootcamp, req, 401, next);
   const course = await Course.create(req.body);
 
   res.status(200).json({
@@ -81,9 +84,14 @@ export const updateCourse = asyncHandler(async function (req, res, next) {
 
   if (!course) {
     return next(
-      new CustomErrorHandlerAPI(`Course with ID: ${courseId} not found`, 404),
+      new CustomErrorHandlerAPI(
+        `Course with ID: ${courseId} was not found`,
+        404,
+      ),
     );
   }
+
+  checkOwner(course, req, 403, next);
 
   course = await Course.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -101,7 +109,7 @@ export const updateCourse = asyncHandler(async function (req, res, next) {
 export const deleteCourse = asyncHandler(async function (req, res, next) {
   const courseId = req.params.id;
 
-  let course = Course.findById(courseId);
+  const course = await Course.findById(courseId);
 
   if (!course) {
     return next(
@@ -111,7 +119,10 @@ export const deleteCourse = asyncHandler(async function (req, res, next) {
       ),
     );
   }
-  course = await Course.deleteOne();
+
+  checkOwner(course, req, 404, next);
+
+  await Course.deleteOne({ _id: courseId });
 
   res.status(200).json({
     success: true,
