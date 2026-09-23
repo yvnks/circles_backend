@@ -3,7 +3,7 @@ import CustomErrorHandlerAPI from '../helpers/customErrorHandlerAPI.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import geocoder from '../utils/app.geocoder.js';
 import path from 'path';
-import checkIfBootcampExists from '../utils/checkBootcamp.js';
+import checkOwner from '../utils/checkOwner.js';
 
 // @desc    Get all bootcamps
 // @route   GET /api/v1/bootcamps
@@ -37,10 +37,11 @@ export const createBootcamp = asyncHandler(async (req, res, next) => {
 
   const publishedBootcamp = await Bootcamp.findOne({ user: req.user.id });
 
-  // Check if user is not an admin.
-  checkIfBootcampExists(bootcamp, req, 401, next);
-
   const bootcamp = await Bootcamp.create(req.body);
+   
+  // Check if user is not an admin.
+  checkOwner(bootcamp, req, 401, next);
+
   res.status(201).json({ success: true, data: bootcamp });
 });
 
@@ -58,7 +59,7 @@ export const updateBootcamp = asyncHandler(async (req, res, next) => {
       ),
     );
   }
-  checkIfBootcampExists(bootcamp, req, 401, next);
+  checkOwner(bootcamp, req, 401, next);
 
   bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -83,7 +84,7 @@ export const deleteBootcamp = asyncHandler(async (req, res, next) => {
     );
   }
 
-  checkIfBootcampExists(bootcamp, req, 401, next);
+  checkOwner(bootcamp, req, 401, next);
 
   await bootcamp.deleteOne();
   res.status(200).json({ enroll: true, data: {} });
@@ -129,7 +130,7 @@ export const bootcampPhotoUpload = asyncHandler(async (req, res, next) => {
     );
   }
 
-  checkIfBootcampExists(bootcamp, req, 401, next);
+  checkOwner(bootcamp, req, 401, next);
 
   if (!req.files) {
     return next(new CustomErrorHandlerAPI('Please upload a file', 404));
