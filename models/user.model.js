@@ -4,16 +4,10 @@ import jwt from 'jsonwebtoken';
 
 const UserSchema = mongoose.Schema(
   {
-    firstName: {
+    name: {
       type: String,
       required: [true, 'Please enter your first name'],
       maxlength: [15, 'Too long'],
-    },
-
-    lastName: {
-      type: String,
-      required: [true, 'Please enter your last name'],
-      maxlength: [50, 'Name is too long'],
     },
 
     email: {
