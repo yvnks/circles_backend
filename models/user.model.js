@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import dayjs from 'dayjs';
 
 const UserSchema = mongoose.Schema(
   {
@@ -28,7 +30,7 @@ const UserSchema = mongoose.Schema(
 
     password: {
       type: String,
-      minlength: 8,
+      minlength: 6,
       select: false,
     },
 
@@ -39,10 +41,13 @@ const UserSchema = mongoose.Schema(
 );
 
 /**
- * @param
+ * @desc
  * hash password before saving into db.
  */
 UserSchema.pre('save', async function () {
+  if (!this.isModified('password')) {
+    return
+  }
   // ten is recommended according to the docs;
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
@@ -56,6 +61,20 @@ UserSchema.methods.getSignedJwtToken = function () {
 
 UserSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate and has passwords.
+UserSchema.methods.getResetPasswordToken = function () {
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  this.resetPasswordExpiration = dayjs().add('10', 'minutes').valueOf();
+
+  return resetToken;
 };
 
 export default mongoose.model('User', UserSchema);

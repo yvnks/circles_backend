@@ -39,12 +39,12 @@ const CourseSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: 'User',
       required: true,
-    }, 
+    },
   },
   { timestamps: true },
 );
 
-CourseSchema.statics.getAverageCost = async function (bootcampId) {
+CourseSchema.statics.getAverageCost = async function (res, bootcampId) {
   // aggregation returns a promise.
   const obj = await this.aggregate([
     {
@@ -63,7 +63,7 @@ CourseSchema.statics.getAverageCost = async function (bootcampId) {
       averageCost: Math.ceil(obj[0].averageCost / 10) * 10,
     });
   } catch (error) {
-    res.status(404).json({ success: false });
+    console.log(error)
   }
 };
 
