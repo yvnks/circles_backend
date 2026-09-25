@@ -2,6 +2,7 @@ import CustomErrorHandlerAPI from '../helpers/customErrorHandlerAPI.js';
 import asyncHandler from '../middleware/asyncHandler.js';
 import User from '../models/user.model.js';
 import dayjs from 'dayjs';
+import sendEmail from '../utils/sendEmail.js';
 
 export const register = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, email, password, role } = req.body;
@@ -67,10 +68,30 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
 
   console.log(resetToken);
   await user.save({ validateBeforeSave: false });
-  res.status(200).json({
-    success: true,
-    data: user,
-  });
+
+  const resetURL = `${req.protocol}://${req.get('host')}/api/v1/resetpassword/${resetToken}/`;
+  const message = `Hello, you are receiving this email because you requested for a new password on your devCamper account. Please make a put request to: \n\n${resetURL}
+`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Password reset token',
+      message,
+    });
+
+    res.status(200).json({ success: true, data: 'Password reset email sent' });
+  } catch (error) {
+    console.log(error);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpiration = undefined;
+
+    await user.save({ validateBeforeSave: false });
+    console.log(error);
+    return next(
+      new CustomErrorHandlerAPI('Failed to send password reset email', 500),
+    );
+  }
 });
 
 const sendTokenResponse = (user, statusCode, res) => {
