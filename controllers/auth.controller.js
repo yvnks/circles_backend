@@ -3,6 +3,7 @@ import asyncHandler from '../middleware/asyncHandler.js';
 import User from '../models/user.model.js';
 import dayjs from 'dayjs';
 import sendEmail from '../utils/sendEmail.js';
+import crypto from 'crypto';
 
 export const register = asyncHandler(async (req, res, next) => {
   const { firstName, lastName, email, password, role } = req.body;
@@ -53,14 +54,19 @@ export const getMe = asyncHandler(async (req, res, next) => {
 });
 /**
  * @desc Forgot password
- * @route POST api/v1/auth/forgotpassword
+ * @route POST api/v1/auth/forgotPassword
  * @access Public
  */
 export const forgotPassword = asyncHandler(async (req, res, next) => {
   const user = await User.findOne({ email: req.body.email });
 
   if (!user) {
-    return next(new CustomErrorHandlerAPI(`Invalid email`, 404));
+    return next(
+      new CustomErrorHandlerAPI(
+        `No user found with email: ${req.body.email}`,
+        404,
+      ),
+    );
   }
 
   // Get reset token.
@@ -69,7 +75,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   console.log(resetToken);
   await user.save({ validateBeforeSave: false });
 
-  const resetURL = `${req.protocol}://${req.get('host')}/api/v1/resetpassword/${resetToken}/`;
+  const resetURL = `${req.protocol}://${req.get('host')}/api/v1/auth/resetpassword/${resetToken}/`;
   const message = `Hello, you are receiving this email because you requested for a new password on your devCamper account. Please make a put request to: \n\n${resetURL}
 `;
 
@@ -92,6 +98,36 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
       new CustomErrorHandlerAPI('Failed to send password reset email', 500),
     );
   }
+});
+
+/**
+ * @desc reset password url
+ * @route PUT /api/v1/resetpassword/:resettoken
+ * @access Public
+ */
+export const resetPassword = asyncHandler(async (req, res, next) => {
+  const resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(req.params.resettoken)
+    .digest('hex');
+
+  // set new password;
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpiration: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return next(CustomErrorHandlerAPI(`Invalid token`, 400));
+  }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpiration = undefined;
+
+  await user.save();
+
+  sendTokenResponse(user, 200, res);
 });
 
 const sendTokenResponse = (user, statusCode, res) => {
